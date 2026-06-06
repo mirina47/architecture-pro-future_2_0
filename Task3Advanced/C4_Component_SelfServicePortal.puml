@@ -16,7 +16,7 @@ Container_Boundary(ssp, "Self‑Service Portal") {
 
 Container_Ext(data_catalog, "Data Product Catalog", "NestJS", "Федерация дата-продуктов")
 Container_Ext(legacy_dwh, "Legacy DWH", "SQL Server", "Устаревшее хранилище (временно)")
-Container_Ext(kafka, "Kafka Streams", "Apache Kafka", "Real-time данные")
+Container_Ext(event_bus, "Event Bus", "Apache Kafka", "Потоковые данные")
 
 Rel(analyst, web_ui, "Использует", "HTTPS")
 Rel(web_ui, auth, "Проверяет права")
@@ -25,6 +25,6 @@ Rel(report_service, semantic_layer, "Запрос метрик")
 Rel(semantic_layer, query_router, "SQL / AST")
 Rel(query_router, data_catalog, "Дата-продукты", "REST/gRPC")
 Rel(query_router, legacy_dwh, "Read-only запросы", "JDBC")
-Rel(query_router, kafka, "Streaming SQL", "Kafka Protocol")
+Rel(query_router, event_bus, "Потоковые данные", "Kafka")
 
 @enduml
