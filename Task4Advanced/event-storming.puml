@@ -1,0 +1,48 @@
+@startuml Event_Storming
+
+title Event Storming системы "Будущее 2.0"
+
+rectangle "Patient Context\n(контекст пациентов)" as Patient
+rectangle "Clinical Context\n(клинический контекст)" as Clinical
+rectangle "Finance Context\n(финансовый контекст)" as Finance
+rectangle "AI Diagnostics Context\n(контекст ИИ-диагностики)" as AI
+
+rectangle "Data Platform\n(платформа данных)" {
+    rectangle "Data Product Catalog\n(каталог дата-продуктов)" as Catalog
+    rectangle "Self-Service Portal\n(портал самообслуживания)" as Portal
+}
+
+rectangle "Legacy DWH + Camel\n(временный контекст)" as Legacy
+
+queue "Kafka" as Kafka
+
+' Публикация событий (синий)
+Patient -[#blue]-> Kafka : Пациент зарегистрирован\nДанные пациента обновлены
+
+Clinical -[#blue]-> Kafka : Прием завершен\nУслуга оказана\nИсследование назначено
+
+AI -[#blue]-> Kafka : Диагноз подготовлен\nСнимок проанализирован
+
+Finance -[#blue]-> Kafka : Кредит создан\nПлатеж обработан\nБаланс изменен
+
+' Подписка на события (зеленый)
+Kafka -[#green]-> Clinical : Диагноз подготовлен
+
+Kafka -[#green]-> AI : Исследование назначено
+
+Kafka -[#green]-> Finance : Услуга оказана
+
+Kafka -[#green]-> Catalog : Прием завершен\nПлатеж обработан\nКредит создан
+
+Kafka -[#green]-> Legacy : Синхронизация данных\n(на время миграции)
+
+Catalog -[#orange]-> Portal : Дата-продукты\nи аналитические данные
+
+legend right
+|= Цвет |= Значение |
+|<#blue> Синий | Публикация событий |
+|<#green> Зеленый | Подписка на события |
+|<#orange> Оранжевый | Доступ к аналитическим данным |
+endlegend
+
+@enduml

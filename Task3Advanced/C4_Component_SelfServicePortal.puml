@@ -1,0 +1,30 @@
+@startuml C4_Component_SelfServicePortal
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Диаграмма компонентов Self‑Service Portal (витрина данных)
+
+Person(analyst, "Аналитик", "Строит отчеты")
+
+Container_Boundary(ssp, "Self‑Service Portal") {
+    Component(web_ui, "Web UI", "VueJS", "Интерфейс для построения отчётов")
+    Component(api_gateway, "API Gateway", "NestJS", "Маршрутизация, аутентификация")
+    Component(report_service, "Report Service", "NestJS", "Конструктор отчётов, бизнес-логика")
+    Component(semantic_layer, "Semantic Layer", "NestJS", "Бизнес-метрики, кэширование")
+    Component(query_router, "Query Router", "NestJS", "Маршрутизация запросов к источникам")
+    Component(auth, "Auth Module", "NestJS + JWT", "Проверка прав")
+}
+
+Container_Ext(data_catalog, "Data Product Catalog", "NestJS", "Федерация дата-продуктов")
+Container_Ext(legacy_dwh, "Legacy DWH", "SQL Server", "Устаревшее хранилище (временно)")
+Container_Ext(event_bus, "Event Bus", "Apache Kafka", "Потоковые данные")
+
+Rel(analyst, web_ui, "Использует", "HTTPS")
+Rel(web_ui, auth, "Проверяет права")
+Rel(web_ui, report_service, "Запрос на отчет")
+Rel(report_service, semantic_layer, "Запрос метрик")
+Rel(semantic_layer, query_router, "SQL / AST")
+Rel(query_router, data_catalog, "Дата-продукты", "REST/gRPC")
+Rel(query_router, legacy_dwh, "Read-only запросы", "JDBC")
+Rel(query_router, event_bus, "Потоковые данные", "Kafka")
+
+@enduml
