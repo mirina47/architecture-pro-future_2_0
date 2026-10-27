@@ -1,0 +1,85 @@
+@startuml C4_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Диаграмма контейнеров "Будущее 2.0" (to-be в горизонте 3-х лет)
+
+' Пользователи
+Person(doctor, "Врач", "Работает с медицинскими данными (назначение лечения)")
+Person(analyst, "Аналитик", "Строит отчеты (финансы, потоки)")
+Person(patient, "Пациент/Клиент", "Пользуется финтех-услугами")
+Person(dp_owner, "Data Product Owner", "Управляет дата-продуктами")
+
+' Облачная среда
+System_Boundary(cloud, "Облачная среда (Yandex Cloud)") {
+    ' API Gateway
+    Container(api_gw, "API Gateway", "NestJS", "Синхронные вызовы (REST)")
+
+    ' Событийная платформа (замена ESB)
+    Container(event_bus, "Event Bus (Kafka)", "Apache Kafka", "Реактивные потоки, доменные события")
+    Container(schema_registry, "Schema Registry", "Confluent", "Управление схемами, версионирование, валидация")
+    Container(stream_processor, "Stream Processor", "Kafka Streams / Flink", "Трансформации, фильтрация, агрегация")
+    Container(dlq, "DLQ + Retry", "Kafka + обработчик", "Нераспознанные события, экспоненциальные задержки")
+    Container(saga, "Saga Coordinator", "Camunda / Temporal", "Оркестрация распределенных бизнес-процессов и компенсирующих транзакций")
+
+    ' Домены
+    Container(patient_domain, "Patient Domain", "NestJS", "Медицинские карты, диагнозы (не отдает данные в аналитику)")
+    Container(finance_domain, "Finance Domain", "Golang", "Счета, кредиты, платежи")
+    Container(ai_domain, "AI Domain", "Python", "ИИ-сервисы для диагностики")
+
+    ' Платформа данных
+    Container(data_catalog, "Data Product Catalog", "NestJS", "Федерирует дата-продукты")
+    Container(portal_bi, "Self-service Portal", "VueJS + NestJS", "Витрина данных самообслуживания")
+
+    ' Антикоррупционные слои (временные)
+    Container(acl_legacy, "Anti-Corruption Layer", "Go", "Мост между Kafka и Legacy DWH")
+}
+
+' Внешние системы
+System_Ext(pharma, "Фармкомпании", "Интеграция через события")
+System_Ext(device_man, "Производитель электроники", "Телеметрия")
+System_Ext(regulator, "Регуляторы", "Отчетность")
+System_Ext(legacy_dwh, "Legacy DWH (SQL Server)", "Постепенно вытесняется")
+
+' Взаимодействие пользователей 
+Rel(doctor, api_gw, "Вызовы", "REST")
+Rel(analyst, portal_bi, "Строит отчеты", "HTTPS")
+Rel(patient, api_gw, "Финтех-операции", "REST")
+Rel(dp_owner, data_catalog, "Управление", "REST")
+
+' API Gateway к доменам
+Rel(api_gw, patient_domain, "Маршрутизация", "REST")
+Rel(api_gw, finance_domain, "Маршрутизация", "REST")
+Rel(api_gw, ai_domain, "Запросы к ИИ", "REST")
+
+' Публикация событий
+Rel(patient_domain, event_bus, "Публикует (PatientRegistered, DiagnosisUpdated)", "Kafka")
+Rel(finance_domain, event_bus, "Публикует (LoanCreated, PaymentProcessed)", "Kafka")
+Rel(ai_domain, event_bus, "Подписывается на медицинские события", "Kafka")
+
+' Data Mesh и аналитика
+Rel(data_catalog, patient_domain, "Запрашивает агрегаты (без медкарт)", "gRPC")
+Rel(data_catalog, finance_domain, "Запрашивает финансовые агрегаты", "gRPC")
+Rel(portal_bi, data_catalog, "Запрашивает дата-продукты", "REST")
+
+' Интеграция внешних систем
+Rel(pharma, event_bus, "Подписывается на события заказов", "Kafka")
+Rel(device_man, event_bus, "Публикует телеметрию", "MQTT → Kafka")
+Rel(regulator, acl_legacy, "Запросы отчетности", "SFTP/API")
+
+' Антикоррупционный слой
+Rel(event_bus, acl_legacy, "Репликация событий", "Kafka")
+Rel(acl_legacy, legacy_dwh, "Запись для обратной совместимости", "SQL")
+
+' ESB replacement: потоки через Schema Registry, Stream Processor, DLQ
+Rel(event_bus, schema_registry, "Валидация схем", "API")
+Rel(event_bus, stream_processor, "Исходные события", "Kafka")
+Rel(stream_processor, event_bus, "Трансформированные события", "Kafka")
+Rel(event_bus, dlq, "Ошибочные события", "Kafka")
+Rel(dlq, event_bus, "Retry (после задержки)", "Kafka")
+
+' Saga оркестрация
+Rel(saga, event_bus, "Подписка на события саг", "Kafka")
+Rel(saga, patient_domain, "Команды", "REST")
+Rel(saga, finance_domain, "Команды", "REST")
+Rel(saga, event_bus, "Публикация событий саг", "Kafka")
+@enduml

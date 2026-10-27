@@ -1,0 +1,32 @@
+@startuml Bounded_Contexts
+
+title Bounded Contexts системы "Будущее 2.0"
+
+rectangle "Patient Context\n(контекст пациентов)" as Patient
+rectangle "Clinical Context\n(клинический контекст)" as Clinical
+rectangle "Finance Context\n(финансовый контекст)" as Finance
+rectangle "AI Diagnostics Context\n(контекст ИИ-диагностики)" as AI
+
+rectangle "Data Platform\n(платформа данных)" {
+    rectangle "Data Product Catalog\n(каталог дата-продуктов)" as Catalog
+    rectangle "Self-Service Portal\n(портал самообслуживания)" as Portal
+}
+
+rectangle "Legacy DWH + Camel\n(временный контекст)" as Legacy
+
+Patient --> Clinical : Зарегистрирован пациент
+
+Clinical --> AI : Назначено исследование
+AI --> Clinical : Диагноз подготовлен
+
+Clinical --> Finance : Услуга оказана
+
+Clinical --> Catalog : Агрегаты по приемам
+Finance --> Catalog : Финансовые агрегаты
+
+Catalog --> Portal : Дата-продукты
+
+Clinical --> Legacy : Синхронизация
+Finance --> Legacy : Синхронизация
+
+@enduml
